@@ -41,6 +41,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+INSTALLED_APPS += [
+    'django_celery_beat',
+]
+
+INSTALLED_APPS += [
+    'workers.apps.WorkersConfig',
+]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -159,4 +166,39 @@ LOGGING = {
         # 'handlers': ['console'],
         # 'level': 'INFO',
     }
+}
+
+# Celery Configuration
+REDIS_URL = 'redis://0.0.0.0:6379/0'
+CELERY_BROKER_URL = [REDIS_URL]
+CELERY_BROKER_TRANSPORT_OPTIONS = {'visibility_timeout': 60 * 60 * 24 * 100}
+CELERY_BROKER_POOL_LIMIT = 0
+
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_RESULT_EXPIRES = 60 * 5                # in seconds
+
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TASK_IGNORE_RESULT = False
+CELERY_TASK_ACKS_LATE = False
+CELERY_TASK_ALWAYS_EAGER = False
+
+
+# CELERY_WORKER_DISABLE_RATE_LIMITS = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 4
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 10        # pre-forked task pool
+CELERY_WORKER_CONCURRENCY = 10                # # of worker processes
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = 'Asia/Seoul'
+CELERY_BEAT_SCHEDULE = {
+    'workers-tasks': {
+        'task': 'workers.tasks.handle_tasks',
+        'schedule': timedelta(seconds=10),
+        'args': (),
+    },
+}
+CELERY_TASK_ROUTES = {
+    'workers.tasks.handle_tasks': {'queue': 'q_default'},
 }
